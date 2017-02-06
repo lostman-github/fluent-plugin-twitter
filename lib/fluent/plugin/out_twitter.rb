@@ -34,15 +34,19 @@ class Fluent::TwitterOutput < Fluent::Output
 
   def emit(tag, es, chain)
     es.each do |time,record|
-      tweet(record['message'])
+      tweet(record['user'], record['message'])
     end
 
     chain.next
   end
 
-  def tweet(message)
+  def tweet(user, message)
     begin
-      @twitter.update(message)
+      if user.nil?
+        @twitter.update(message)
+      else
+        @twitter.create_direct_message(user, message)
+      end
     rescue Twitter::Error => e
       $log.error("Twitter Error: #{e.message}")
     end
