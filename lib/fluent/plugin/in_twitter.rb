@@ -27,6 +27,7 @@ module Fluent
     config_param :lang, :string, :default => nil
     config_param :output_format, :string, :default => 'simple'
     config_param :flatten_separator, :string, :default => '_'
+    config_param :message_types, :array, :default => [ 'Twitter::Tweet' ]
 
     def initialize
       super
@@ -86,13 +87,17 @@ module Fluent
     end
 
     def is_message?(tweet)
-      return false if !tweet.is_a?(Twitter::Tweet)
-      return false if (!@lang.nil? && @lang != '') && !@lang.include?(tweet.user.lang)
-      if @timeline == 'userstream' && (!@keyword.nil? && @keyword != '')
-        pattern = NKF::nkf('-WwZ1', @keyword).gsub(/,\s?/, '|')
-        tweet = NKF::nkf('-WwZ1', tweet.text)
-        return false if !Regexp.new(pattern, Regexp::IGNORECASE).match(tweet)
+      return false if !@message_types.include?(tweet.class.to_s)
+
+      if tweet.is_a?(Twitter::Tweet)
+        return false if (!@lang.nil? && @lang != '') && !@lang.include?(tweet.user.lang)
+        if @timeline == 'userstream' && (!@keyword.nil? && @keyword != '')
+          pattern = NKF::nkf('-WwZ1', @keyword).gsub(/,\s?/, '|')
+          tweet = NKF::nkf('-WwZ1', tweet.text)
+          return false if !Regexp.new(pattern, Regexp::IGNORECASE).match(tweet)
+        end
       end
+
       return true
     end
 
